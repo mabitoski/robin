@@ -4,6 +4,7 @@ from yaspin import yaspin
 from datetime import datetime
 from scrape import scrape_multiple, filter_content_by_terms
 from search import get_search_results
+from download import download_safe_files
 from llm import (
     get_llm,
     refine_query,
@@ -48,7 +49,20 @@ def robin():
     type=str,
     help="Filename to save the final intelligence summary. If not provided, a filename based on the current date and time is used.",
 )
-def cli(model, query, threads, output):
+@click.option(
+    "--download-files/--no-download-files",
+    default=False,
+    show_default=True,
+    help="Download safe text-like files (txt/csv/json/pdf) into an isolated folder per query.",
+)
+@click.option(
+    "--max-download-mb",
+    default=5,
+    show_default=True,
+    type=int,
+    help="Maximum size per file to download (MB)",
+)
+def cli(model, query, threads, output, download_files, max_download_mb):
     """Run Robin in CLI mode.\n
     Example commands:\n
     - robin -m gpt4o -q "heliaq data breach leak forum" -t 12\n
@@ -75,6 +89,22 @@ def cli(model, query, threads, output):
     # Show extracted indicators up front so the user doesn't need to open every link.
     indicators = build_indicator_block(scraped_results)
     click.echo("\n[INDICATORS]\n" + indicators + "\n")
+
+    # Optional safe file downloads
+    downloaded = []
+    if download_files:
+        downloaded = download_safe_files(
+            search_filtered, query, max_size_mb=max_download_mb
+        )
+        if downloaded:
+            click.echo("[DOWNLOADS]")
+            for item in downloaded:
+                click.echo(
+                    f"- {item['path']} ({item['bytes']} bytes) <- {item['url']}"
+                )
+            click.echo("")
+        else:
+            click.echo("[DOWNLOADS] Aucun fichier sûr détecté pour cette requête.\n")
 
     # Generate the intelligence summary.
     summary = generate_summary(llm, query, scraped_results)

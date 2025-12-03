@@ -2,6 +2,7 @@ import base64
 import streamlit as st
 from datetime import datetime
 from scrape import scrape_multiple, filter_content_by_terms
+from download import download_safe_files
 from search import get_search_results
 from llm_utils import BufferedStreamingHandler, get_model_choices
 from llm import (
@@ -85,6 +86,11 @@ model = st.sidebar.selectbox(
 if any(name not in {"gpt4o", "gpt-4.1", "claude-3-5-sonnet-latest", "llama3.1", "gemini-2.5-flash"} for name in model_options):
     st.sidebar.caption("Locally detected Ollama models are automatically added to this list.")
 threads = st.sidebar.slider("Scraping Threads", 1, 16, 8, key="thread_slider")
+
+download_files = st.sidebar.checkbox(
+    "Télécharger les fichiers sûrs (txt/csv/json/pdf)", value=False
+)
+max_download_mb = st.sidebar.slider("Taille max fichier (MB)", 1, 20, 5)
 
 # Roadmap / search history
 st.sidebar.markdown("---")
@@ -198,6 +204,24 @@ if run_button and query:
             st.session_state.scraped = filter_content_by_terms(
                 st.session_state.scraped, focus_terms
             )
+
+    # Optional safe file downloads
+    downloaded = []
+    if download_files:
+        with status_slot.container():
+            with st.spinner("⬇️ Téléchargement des fichiers sûrs..."):
+                downloaded = download_safe_files(
+                    st.session_state.filtered, query, max_size_mb=max_download_mb
+                )
+        if downloaded:
+            st.success(f"{len(downloaded)} fichier(s) téléchargé(s) dans le dossier downloads/.")
+            with st.expander("Fichiers téléchargés"):
+                for item in downloaded:
+                    st.write(
+                        f"- {item['path']} ({item['bytes']} bytes) ← {item['url']}"
+                    )
+        else:
+            st.info("Aucun fichier sûr détecté pour cette requête.")
 
     # Quick indicator view for the user
     indicator_block = build_indicator_block(st.session_state.scraped)

@@ -76,5 +76,7 @@ def build_pdf_report(
         pdf.output(output_path)
         return output_path
 
-    pdf_bytes = pdf.output(dest="S").encode("latin1")
-    return pdf_bytes
+    raw = pdf.output(dest="S")
+    if isinstance(raw, (bytes, bytearray)):
+        return bytes(raw)
+    return str(raw).encode("latin1", "ignore")

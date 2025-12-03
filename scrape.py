@@ -104,3 +104,23 @@ def scrape_multiple(urls_data, max_workers=5):
                 continue
                 
     return results
+
+
+def filter_content_by_terms(content: dict, focus_terms):
+    """
+    Keep only scraped entries that contain at least one focus term
+    in the URL or the scraped text. Returns a possibly empty dict.
+    """
+    if not content:
+        return {}
+
+    normalized_terms = [t.lower() for t in focus_terms if t]
+    if not normalized_terms:
+        return content
+
+    filtered = {}
+    for url, text in content.items():
+        haystack = f"{url} {text}".lower()
+        if any(term in haystack for term in normalized_terms):
+            filtered[url] = text
+    return filtered

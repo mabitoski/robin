@@ -84,7 +84,7 @@ def fetch_search_results(endpoint, query):
     except:
         return []
 
-def get_search_results(refined_query, max_workers=5):
+def get_search_results(refined_query, max_workers=5, focus_terms=None):
     results = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [executor.submit(fetch_search_results, endpoint, refined_query)
@@ -111,5 +111,16 @@ def get_search_results(refined_query, max_workers=5):
     focused = [res for res in unique_results if _matches_focus(res)]
     if not focused:
         focused = unique_results[:25]
+
+    # If focus terms are provided, require at least one term in title/link.
+    if focus_terms:
+        lowered_terms = [t.lower() for t in focus_terms if t]
+        term_filtered = []
+        for item in focused:
+            haystack = f"{item.get('title', '')} {item.get('link', '')}".lower()
+            if any(term in haystack for term in lowered_terms):
+                term_filtered.append(item)
+        if term_filtered:
+            focused = term_filtered
 
     return focused

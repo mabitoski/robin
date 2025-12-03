@@ -225,6 +225,33 @@ def _format_indicators(indicators):
     return "\n".join(lines)
 
 
+def extract_focus_terms(raw_query: str):
+    """Derive focus terms from the user query and drop generic leak words."""
+    stop_words = {
+        "breach",
+        "leak",
+        "leaks",
+        "dump",
+        "database",
+        "data",
+        "forum",
+        "discussion",
+        "credentials",
+        "cred",
+        "password",
+        "passwd",
+        "hack",
+        "hacking",
+        "onion",
+        "darkweb",
+        "dark",
+        "web",
+    }
+    terms = re.findall(r"[a-zA-Z0-9._-]+", raw_query.lower())
+    filtered = [t for t in terms if t not in stop_words]
+    return filtered if filtered else terms
+
+
 def build_indicator_block(content):
     """Public helper to expose extracted indicators for direct display."""
     indicators = _extract_indicators(content)

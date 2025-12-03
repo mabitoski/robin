@@ -2,7 +2,7 @@ import click
 import subprocess
 from yaspin import yaspin
 from datetime import datetime
-from scrape import scrape_multiple
+from scrape import scrape_multiple, filter_content_by_terms
 from search import get_search_results
 from llm import (
     get_llm,
@@ -10,6 +10,7 @@ from llm import (
     filter_results,
     generate_summary,
     build_indicator_block,
+    extract_focus_terms,
 )
 from llm_utils import get_model_choices
 
@@ -59,14 +60,16 @@ def cli(model, query, threads, output):
     # Show spinner while processing the query
     with yaspin(text="Processing...", color="cyan") as sp:
         refined_query = refine_query(llm, query)
+        focus_terms = extract_focus_terms(query)
 
         search_results = get_search_results(
-            refined_query.replace(" ", "+"), max_workers=threads
+            refined_query.replace(" ", "+"), max_workers=threads, focus_terms=focus_terms
         )
 
         search_filtered = filter_results(llm, refined_query, search_results)
 
         scraped_results = scrape_multiple(search_filtered, max_workers=threads)
+        scraped_results = filter_content_by_terms(scraped_results, focus_terms)
         sp.ok("✔")
 
     # Show extracted indicators up front so the user doesn't need to open every link.

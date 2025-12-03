@@ -1,16 +1,25 @@
 import base64
 import streamlit as st
 from datetime import datetime
-from scrape import scrape_multiple
+from scrape import scrape_multiple, filter_content_by_terms
 from search import get_search_results
 from llm_utils import BufferedStreamingHandler, get_model_choices
-from llm import get_llm, refine_query, filter_results, generate_summary, build_indicator_block
+from llm import (
+    get_llm,
+    refine_query,
+    filter_results,
+    generate_summary,
+    build_indicator_block,
+    extract_focus_terms,
+)
 
 
 # Cache expensive backend calls
 @st.cache_data(ttl=200, show_spinner=False)
-def cached_search_results(refined_query: str, threads: int):
-    return get_search_results(refined_query.replace(" ", "+"), max_workers=threads)
+def cached_search_results(refined_query: str, threads: int, focus_terms: list):
+    return get_search_results(
+        refined_query.replace(" ", "+"), max_workers=threads, focus_terms=focus_terms
+    )
 
 
 @st.cache_data(ttl=200, show_spinner=False)
@@ -108,6 +117,7 @@ if run_button and query:
     # clear old state
     for k in ["refined", "results", "filtered", "scraped", "streamed_summary"]:
         st.session_state.pop(k, None)
+    focus_terms = extract_focus_terms(query)
 
     # Stage 1 - Load LLM
     with status_slot.container():
@@ -127,7 +137,7 @@ if run_button and query:
     with status_slot.container():
         with st.spinner("🔍 Searching dark web..."):
             st.session_state.results = cached_search_results(
-                st.session_state.refined, threads
+                st.session_state.refined, threads, focus_terms
             )
     p2.container(border=True).markdown(
         f"<div class='colHeight'><p class='pTitle'>Search Results</p><p>{len(st.session_state.results)}</p></div>",
@@ -150,6 +160,9 @@ if run_button and query:
         with st.spinner("📜 Scraping content..."):
             st.session_state.scraped = cached_scrape_multiple(
                 st.session_state.filtered, threads
+            )
+            st.session_state.scraped = filter_content_by_terms(
+                st.session_state.scraped, focus_terms
             )
 
     # Quick indicator view for the user

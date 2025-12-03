@@ -34,6 +34,13 @@ SEARCH_ENGINE_ENDPOINTS = [
     "http://oniwayzz74cv2puhsgx4dpjwieww4wdphsydqvf5q7eyz4myjvyw26ad.onion/search.php?s={query}", # Onionway
     "http://tor66sewebgixwhcqfnp5inzp5x5uohhdy3kvtnyfxc2e5mxiuh34iid.onion/search?q={query}", # Tor66
     "http://3fzh7yuupdfyjhwt3ugzqqof6ulbcl27ecev33knxe3u7goi3vfn2qqd.onion/oss/index.php?search={query}", # OSS (Onion Search Server)
+    "http://xmh57jrzrnw6insl.onion/?q={query}", # Torch
+    "http://hss3uro2hsxfogfq.onion/?q={query}", # NotEvil
+    "http://suprbayoubiexnmp.onion/search.php?q={query}", # PirateBay mirror
+    "https://ahmia.fi/search/?q={query}", # Ahmia clearnet
+    "https://darksearch.io/api/search?query={query}", # DarkSearch API (clearnet)
+    "https://onionsearchengine.com/search?q={query}", # Onion Search Engine clearnet
+    "https://onionlandsearchengine.com/search?q={query}", # OnionLand clearnet
 ]
 
 # Prefer breach/forum leads to cut noise and speed up scraping

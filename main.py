@@ -5,6 +5,7 @@ from datetime import datetime
 from scrape import scrape_multiple, filter_content_by_terms
 from search import get_search_results
 from download import download_safe_files
+from pdf_report import build_pdf_report
 from llm import (
     get_llm,
     refine_query,
@@ -62,7 +63,13 @@ def robin():
     type=int,
     help="Maximum size per file to download (MB)",
 )
-def cli(model, query, threads, output, download_files, max_download_mb):
+@click.option(
+    "--pdf-report/--no-pdf-report",
+    default=False,
+    show_default=True,
+    help="Generate a PDF report alongside the markdown summary.",
+)
+def cli(model, query, threads, output, download_files, max_download_mb, pdf_report):
     """Run Robin in CLI mode.\n
     Example commands:\n
     - robin -m gpt4o -q "heliaq data breach leak forum" -t 12\n
@@ -112,13 +119,25 @@ def cli(model, query, threads, output, download_files, max_download_mb):
     # Save or print the summary
     if not output:
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename = f"summary_{now}.md"
+        base = f"summary_{now}"
     else:
-        filename = output + ".md"
+        base = output
 
-    with open(filename, "w", encoding="utf-8") as f:
+    md_path = f"{base}.md"
+    with open(md_path, "w", encoding="utf-8") as f:
         f.write(summary)
-        click.echo(f"\n\n[OUTPUT] Final intelligence summary saved to {filename}")
+        click.echo(f"\n\n[OUTPUT] Final intelligence summary saved to {md_path}")
+
+    if pdf_report:
+        pdf_path = f"{base}.pdf"
+        build_pdf_report(
+            query=query,
+            indicators_text=indicators,
+            summary_text=summary,
+            sources=search_filtered,
+            output_path=pdf_path,
+        )
+        click.echo(f"[OUTPUT] PDF report saved to {pdf_path}")
 
 
 @robin.command()

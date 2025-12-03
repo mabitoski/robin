@@ -4,7 +4,7 @@ from datetime import datetime
 from scrape import scrape_multiple
 from search import get_search_results
 from llm_utils import BufferedStreamingHandler, get_model_choices
-from llm import get_llm, refine_query, filter_results, generate_summary
+from llm import get_llm, refine_query, filter_results, generate_summary, build_indicator_block
 
 
 # Cache expensive backend calls
@@ -151,6 +151,11 @@ if run_button and query:
             st.session_state.scraped = cached_scrape_multiple(
                 st.session_state.filtered, threads
             )
+
+    # Quick indicator view for the user
+    indicator_block = build_indicator_block(st.session_state.scraped)
+    with st.expander("Voir les indicateurs extraits (IOCs)", expanded=True):
+        st.code(indicator_block, language="text")
 
     # Stage 6 - Summarize
     # 6a) Prepare session state for streaming text

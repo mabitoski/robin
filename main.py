@@ -4,7 +4,13 @@ from yaspin import yaspin
 from datetime import datetime
 from scrape import scrape_multiple
 from search import get_search_results
-from llm import get_llm, refine_query, filter_results, generate_summary
+from llm import (
+    get_llm,
+    refine_query,
+    filter_results,
+    generate_summary,
+    build_indicator_block,
+)
 from llm_utils import get_model_choices
 
 MODEL_CHOICES = get_model_choices()
@@ -62,6 +68,10 @@ def cli(model, query, threads, output):
 
         scraped_results = scrape_multiple(search_filtered, max_workers=threads)
         sp.ok("✔")
+
+    # Show extracted indicators up front so the user doesn't need to open every link.
+    indicators = build_indicator_block(scraped_results)
+    click.echo("\n[INDICATORS]\n" + indicators + "\n")
 
     # Generate the intelligence summary.
     summary = generate_summary(llm, query, scraped_results)

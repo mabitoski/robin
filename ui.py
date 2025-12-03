@@ -86,6 +86,40 @@ if any(name not in {"gpt4o", "gpt-4.1", "claude-3-5-sonnet-latest", "llama3.1", 
     st.sidebar.caption("Locally detected Ollama models are automatically added to this list.")
 threads = st.sidebar.slider("Scraping Threads", 1, 16, 8, key="thread_slider")
 
+# Roadmap / search history
+st.sidebar.markdown("---")
+st.sidebar.subheader("Roadmap des recherches")
+if "roadmap" not in st.session_state:
+    st.session_state.roadmap = []
+
+def _add_to_roadmap(query: str, refined: str, filtered_count: int, indicators: str):
+    preview = indicators.strip().split("\n")
+    preview = preview[0] if preview else ""
+    st.session_state.roadmap.insert(0, {
+        "query": query,
+        "refined": refined,
+        "filtered": filtered_count,
+        "indicators": indicators,
+        "preview": preview[:140]
+    })
+    st.session_state.roadmap = st.session_state.roadmap[:10]
+
+for i, item in enumerate(st.session_state.roadmap):
+    with st.sidebar.expander(f"🔎 {item['query']}"):
+        st.caption(f"Refined: {item['refined']}")
+        st.caption(f"Résultats filtrés: {item['filtered']}")
+        if item.get("preview"):
+            st.text(item['preview'])
+        follow = st.text_input(
+            "Affiner",
+            placeholder="Ajouter un détail",
+            key=f"roadmap_follow_{i}"
+        )
+        if st.button("🔍 Relancer", key=f"roadmap_btn_{i}"):
+            new_q = item['query'] if not follow else f"{item['query']} {follow}"
+            st.session_state.query_input = new_q
+            st.experimental_rerun()
+
 
 # Main UI - logo and input
 _, logo_col, _ = st.columns(3)
@@ -169,6 +203,9 @@ if run_button and query:
     indicator_block = build_indicator_block(st.session_state.scraped)
     with st.expander("Voir les indicateurs extraits (IOCs)", expanded=True):
         st.code(indicator_block, language="text")
+
+    # Save to roadmap/history
+    _add_to_roadmap(query, st.session_state.refined, len(st.session_state.filtered), indicator_block)
 
     # Stage 6 - Summarize
     # 6a) Prepare session state for streaming text

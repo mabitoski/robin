@@ -75,7 +75,7 @@ model = st.sidebar.selectbox(
 )
 if any(name not in {"gpt4o", "gpt-4.1", "claude-3-5-sonnet-latest", "llama3.1", "gemini-2.5-flash"} for name in model_options):
     st.sidebar.caption("Locally detected Ollama models are automatically added to this list.")
-threads = st.sidebar.slider("Scraping Threads", 1, 16, 4, key="thread_slider")
+threads = st.sidebar.slider("Scraping Threads", 1, 16, 8, key="thread_slider")
 
 
 # Main UI - logo and input
@@ -87,8 +87,8 @@ with logo_col:
 with st.form("search_form", clear_on_submit=True):
     col_input, col_button = st.columns([10, 1])
     query = col_input.text_input(
-        "Enter Dark Web Search Query",
-        placeholder="Enter Dark Web Search Query",
+        "Check leaks & forum discussions",
+        placeholder="Ex: heliaq data breach / leak",
         label_visibility="collapsed",
         key="query_input",
     )

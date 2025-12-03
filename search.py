@@ -36,6 +36,21 @@ SEARCH_ENGINE_ENDPOINTS = [
     "http://3fzh7yuupdfyjhwt3ugzqqof6ulbcl27ecev33knxe3u7goi3vfn2qqd.onion/oss/index.php?search={query}", # OSS (Onion Search Server)
 ]
 
+# Prefer breach/forum leads to cut noise and speed up scraping
+BREACH_KEYWORDS = [
+    "breach",
+    "leak",
+    "dump",
+    "database",
+    "db",
+    "forum",
+    "discussion",
+    "thread",
+    "paste",
+    "chat",
+    "topic",
+]
+
 def get_tor_proxies():
     return {
         "http": "socks5h://127.0.0.1:9050",
@@ -86,4 +101,15 @@ def get_search_results(refined_query, max_workers=5):
         if link not in seen_links:
             seen_links.add(link)
             unique_results.append(res)
-    return unique_results
+
+    # Keep only breach / forum looking hits to reduce noise and speed scraping.
+    # If nothing matches, fall back to the first 25 raw results.
+    def _matches_focus(item):
+        haystack = f"{item.get('title', '')} {item.get('link', '')}".lower()
+        return any(keyword in haystack for keyword in BREACH_KEYWORDS)
+
+    focused = [res for res in unique_results if _matches_focus(res)]
+    if not focused:
+        focused = unique_results[:25]
+
+    return focused

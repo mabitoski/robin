@@ -39,13 +39,13 @@ def get_llm(model_choice):
 
 def refine_query(llm, user_input):
     system_prompt = """
-    You are a Cybercrime Threat Intelligence Expert. Your task is to refine the provided user query that needs to be sent to darkweb search engines. 
-    
+    You are a Cybercrime Threat Intelligence Expert. Your task is to refine the provided user query for darkweb search engines with a strict focus on data breaches and forum discussions about the target.
+
     Rules:
-    1. Analyze the user query and think about how it can be improved to use as search engine query
-    2. Refine the user query by adding or removing words so that it returns the best result from dark web search engines
-    3. Don't use any logical operators (AND, OR, etc.)
-    4. Output just the user query and nothing else
+    1. Preserve the core entity or keyword from the user input.
+    2. Add or swap in terms that emphasize leaks, dumps, data breaches, or forum/thread discussions (e.g., "data breach", "leak", "dump", "forum", "discussion").
+    3. Do NOT use logical operators (AND, OR, etc.) or quotes.
+    4. Keep the query short (under 8 words) and output only the refined query text.
 
     INPUT:
     """
@@ -53,7 +53,14 @@ def refine_query(llm, user_input):
         [("system", system_prompt), ("user", "{query}")]
     )
     chain = prompt_template | llm | StrOutputParser()
-    return chain.invoke({"query": user_input})
+    refined = chain.invoke({"query": user_input})
+
+    # Ensure breach/forum intent even if the LLM keeps the query too short
+    focus_terms = ["breach", "leak", "dump", "forum", "discussion"]
+    if not any(term in refined.lower() for term in focus_terms):
+        refined = f"{refined} data breach leak forum"
+
+    return refined
 
 
 def filter_results(llm, query, results):
@@ -61,10 +68,11 @@ def filter_results(llm, query, results):
         return []
 
     system_prompt = """
-    You are a Cybercrime Threat Intelligence Expert. You are given a dark web search query and a list of search results in the form of index, link and title. 
-    Your task is select the Top 20 relevant results that best match the search query for user to investigate more.
-    Rule:
-    1. Output ONLY atmost top 20 indices (comma-separated list) no more than that that best match the input query
+    You are a Cybercrime Threat Intelligence Expert. You are given a dark web search query and a list of search results in the form of index, link and title.
+    Your job is to pick only results that look like data breaches, leak dumps, or forum/thread discussions about the query.
+    Rules:
+    1. Prefer forum threads, discussion boards, paste sites, and breach/dump announcements. Avoid generic marketplaces or unrelated content.
+    2. Output ONLY the indices (comma-separated) for at most the top 20 relevant results.
 
     Search Query: {query}
     Search Results:
@@ -155,19 +163,19 @@ def _generate_final_string(results, truncate=False):
 
 def generate_summary(llm, query, content):
     system_prompt = """
-    You are an Cybercrime Threat Intelligence Expert tasked with generating context-based technical investigative insights from dark web osint search engine results.
+    You are an Cybercrime Threat Intelligence Expert tasked with generating context-based technical investigative insights from dark web OSINT search engine results.
 
     Rules:
-    1. Analyze the Darkweb OSINT data provided using links and their raw text.
-    2. Output the Source Links referenced for the analysis.
-    3. Provide a detailed, contextual, evidence-based technical analysis of the data.
-    4. Provide intellgience artifacts along with their context visible in the data.
-    5. The artifacts can include indicators like name, email, phone, cryptocurrency addresses, domains, darkweb markets, forum names, threat actor information, malware names, TTPs, etc.
-    6. Generate 3-5 key insights based on the data.
+    1. Focus on evidence of data breaches, credential dumps, or forum/thread discussions mentioning the query.
+    2. Analyze the Darkweb OSINT data provided using links and their raw text.
+    3. Output the Source Links referenced for the analysis.
+    4. Provide a detailed, contextual, evidence-based technical analysis of the data.
+    5. Provide intelligence artifacts along with their context visible in the data (usernames, emails, phone numbers, crypto, domains, markets, forums, threat actor info, malware names, TTPs, etc.).
+    6. Generate 3-5 key insights based on the data, explicitly noting if no breach/discussion evidence is found.
     7. Each insight should be specific, actionable, context-based, and data-driven.
-    8. Include suggested next steps and queries for investigating more on the topic.
+    8. Include suggested next steps and queries for deeper investigation of the topic or artifacts.
     9. Be objective and analytical in your assessment.
-    10. Ignore not safe for work texts from the analysis
+    10. Ignore not safe for work texts from the analysis.
 
     Output Format:
     1. Input Query: {query}

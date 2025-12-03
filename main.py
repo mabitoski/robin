@@ -30,10 +30,10 @@ def robin():
 @click.option(
     "--threads",
     "-t",
-    default=5,
+    default=8,
     show_default=True,
     type=int,
-    help="Number of threads to use for scraping (Default: 5)",
+    help="Number of threads to use for scraping (Default: 8)",
 )
 @click.option(
     "--output",
@@ -44,9 +44,9 @@ def robin():
 def cli(model, query, threads, output):
     """Run Robin in CLI mode.\n
     Example commands:\n
-    - robin -m gpt4o -q "ransomware payments" -t 12\n
-    - robin --model claude-3-5-sonnet-latest --query "sensitive credentials exposure" --threads 8 --output filename\n
-    - robin -m llama3.1 -q "zero days"\n
+    - robin -m gpt4o -q "heliaq data breach leak forum" -t 12\n
+    - robin --model claude-3-5-sonnet-latest --query "brandname leak discussion" --threads 8 --output filename\n
+    - robin -m llama3.1 -q "company xyz forum breach"\n
     """
     llm = get_llm(model)
 

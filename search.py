@@ -1,5 +1,5 @@
 import requests
-import random, re
+import random, re, json
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -19,6 +19,7 @@ USER_AGENTS = [
 ]
 
 SEARCH_ENGINE_ENDPOINTS = [
+    # Darknet engines / directories
     "http://juhanurmihxlp77nkq76byazcldy2hlmovfu2epvl5ankdibsot4csyd.onion/search/?q={query}", # Ahmia
     "http://3bbad7fauom4d6sgppalyqddsqbf5u5p56b5k5uk2zxsy3d6ey2jobad.onion/search?q={query}", # OnionLand
     "http://darkhuntyla64h75a3re5e2l3367lqn7ltmdzpgmr6b4nbz3q2iaxrid.onion/search?q={query}", # DarkRunt
@@ -30,17 +31,21 @@ SEARCH_ENGINE_ENDPOINTS = [
     "http://tornetupfu7gcgidt33ftnungxzyfq2pygui5qdoyss34xbgx2qruzid.onion/search?q={query}", # TorNet
     "http://torlbmqwtudkorme6prgfpmsnile7ug2zm4u3ejpcncxuhpu4k2j4kyd.onion/index.php?a=search&q={query}", # Torland
     "http://findtorroveq5wdnipkaojfpqulxnkhblymc7aramjzajcvpptd4rjqd.onion/search?q={query}", # Find Tor
-    "http://2fd6cemt4gmccflhm6imvdfvli3nf7zn6rfrwpsy7uhxrgbypvwf5fad.onion/search?query={query}", # Excavator    
+    "http://2fd6cemt4gmccflhm6imvdfvli3nf7zn6rfrwpsy7uhxrgbypvwf5fad.onion/search?query={query}", # Excavator
     "http://oniwayzz74cv2puhsgx4dpjwieww4wdphsydqvf5q7eyz4myjvyw26ad.onion/search.php?s={query}", # Onionway
     "http://tor66sewebgixwhcqfnp5inzp5x5uohhdy3kvtnyfxc2e5mxiuh34iid.onion/search?q={query}", # Tor66
     "http://3fzh7yuupdfyjhwt3ugzqqof6ulbcl27ecev33knxe3u7goi3vfn2qqd.onion/oss/index.php?search={query}", # OSS (Onion Search Server)
     "http://xmh57jrzrnw6insl.onion/?q={query}", # Torch
     "http://hss3uro2hsxfogfq.onion/?q={query}", # NotEvil
     "http://suprbayoubiexnmp.onion/search.php?q={query}", # PirateBay mirror
+    # Clear web engines / breach trackers
     "https://ahmia.fi/search/?q={query}", # Ahmia clearnet
     "https://darksearch.io/api/search?query={query}", # DarkSearch API (clearnet)
     "https://onionsearchengine.com/search?q={query}", # Onion Search Engine clearnet
     "https://onionlandsearchengine.com/search?q={query}", # OnionLand clearnet
+    "https://ransomware.live/search?query={query}", # ransomware tracker
+    "https://ransomwatch.telemetry.ltd/#/search?query={query}", # ransomware watch
+    "https://leak-lookup.com/search?q={query}", # leak lookup index
 ]
 
 # Prefer breach/forum leads to cut noise and speed up scraping
@@ -72,23 +77,41 @@ def fetch_search_results(endpoint, query):
     proxies = get_tor_proxies()
     try:
         response = requests.get(url, headers=headers, proxies=proxies, timeout=30)
-        if response.status_code == 200:
-            # Normally you would parse html_content with BeautifulSoup and extract results.
-            soup = BeautifulSoup(response.text, "html.parser")
-            links = []
-            for a in soup.find_all('a'):
-                try:
-                    href = a['href']
-                    title = a.get_text(strip=True)
-                    link = re.findall(r'https?:\/\/[^\/]*\.onion.*', href)
-                    if len(link) != 0:
-                        links.append({"title": title, "link": link[0]})
-                except:
-                    continue
-            return links
-        else:
+        if response.status_code != 200:
             return []
-    except:
+
+        ctype = response.headers.get("Content-Type", "")
+        links = []
+
+        # JSON API parsing (e.g., darksearch)
+        if "application/json" in ctype:
+            try:
+                data = response.json()
+                results = data.get("data") or data.get("results") or []
+                for entry in results:
+                    title = entry.get("title") or entry.get("header") or ""
+                    link = entry.get("link") or entry.get("url") or entry.get("hidden_service")
+                    if link:
+                        links.append({"title": title, "link": link})
+                return links
+            except Exception:
+                return []
+
+        # HTML parsing
+        soup = BeautifulSoup(response.text, "html.parser")
+        for a in soup.find_all('a'):
+            try:
+                href = a['href']
+                title = a.get_text(strip=True)
+                link = re.findall(r'https?:\/\/[^\s\"]+', href)
+                if len(link) == 0:
+                    link = re.findall(r'[^\s\"]+\.onion[^\s\"]*', href)
+                if len(link) != 0:
+                    links.append({"title": title, "link": link[0]})
+            except Exception:
+                continue
+        return links
+    except Exception:
         return []
 
 def get_search_results(refined_query, max_workers=5, focus_terms=None):

@@ -10,11 +10,30 @@ class _Report(FPDF):
         self.ln(4)
 
 
+def _sanitize_text(text: str) -> str:
+    """Replace common Unicode punctuation and drop characters outside latin-1 to avoid PDF errors."""
+    if not text:
+        return ""
+    replacements = {
+        "–": "-",
+        "—": "-",
+        "“": '"',
+        "”": '"',
+        "’": "'",
+        "‘": "'",
+        "…": "...",
+    }
+    for k, v in replacements.items():
+        text = text.replace(k, v)
+    return text.encode("latin-1", "ignore").decode("latin-1")
+
+
 def _add_section(pdf: _Report, title: str, body: str):
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 8, title, ln=True)
+    pdf.cell(0, 8, _sanitize_text(title), ln=True)
     pdf.set_font("Helvetica", "", 11)
-    for line in textwrap.wrap(body, width=100):
+    clean_body = _sanitize_text(body)
+    for line in textwrap.wrap(clean_body, width=100):
         pdf.cell(0, 6, line, ln=True)
     pdf.ln(4)
 

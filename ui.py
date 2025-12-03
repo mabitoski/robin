@@ -261,17 +261,20 @@ if run_button and query:
         href = f'<div class="aStyle">📥 <a href="data:file/markdown;base64,{b64}" download="{fname}">Download</a></div>'
         st.markdown(href, unsafe_allow_html=True)
 
-        pdf_bytes = build_pdf_report(
-            query=query,
-            indicators_text=indicator_block,
-            summary_text=st.session_state.streamed_summary,
-            sources=st.session_state.filtered,
-            output_path=None,
-        )
-        st.download_button(
-            "📄 Télécharger PDF",
-            data=pdf_bytes,
-            file_name=f"summary_{now}.pdf",
-            mime="application/pdf",
-        )
+        try:
+            pdf_bytes = build_pdf_report(
+                query=query,
+                indicators_text=indicator_block,
+                summary_text=st.session_state.streamed_summary,
+                sources=st.session_state.filtered,
+                output_path=None,
+            )
+            st.download_button(
+                "📄 Télécharger PDF",
+                data=pdf_bytes,
+                file_name=f"summary_{now}.pdf",
+                mime="application/pdf",
+            )
+        except Exception as e:
+            st.error(f"Erreur génération PDF: {e}")
     status_slot.success("✔️ Pipeline completed successfully!")

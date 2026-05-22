@@ -45,21 +45,47 @@ _common_llm_params = {
 # Map input model choices (lowercased) to their configuration
 # Each config includes the class and any model-specific constructor parameters
 _llm_config_map = {
+    # OpenAI
     'gpt-4.1': {
         'class': ChatOpenAI,
-        'constructor_params': {'model_name': 'gpt-4.1'} 
+        'constructor_params': {'model_name': 'gpt-4.1'}
+    },
+    'gpt-5': {
+        'class': ChatOpenAI,
+        'constructor_params': {'model_name': 'gpt-5'}
     },
     'gpt-5.1': {
         'class': ChatOpenAI,
-        'constructor_params': {'model_name': 'gpt-5.1'} 
+        'constructor_params': {'model_name': 'gpt-5.1'}
+    },
+    'gpt-5.4': {
+        'class': ChatOpenAI,
+        'constructor_params': {'model_name': 'gpt-5.4'}
     },
     'gpt-5-mini': {
         'class': ChatOpenAI,
-        'constructor_params': {'model_name': 'gpt-5-mini'} 
+        'constructor_params': {'model_name': 'gpt-5-mini'}
     },
-    'gpt-5-nano': { 
+    'gpt-5-nano': {
         'class': ChatOpenAI,
-        'constructor_params': {'model_name': 'gpt-5-nano'} 
+        'constructor_params': {'model_name': 'gpt-5-nano'}
+    },
+    'gpt-5-codex': {
+        'class': ChatOpenAI,
+        'constructor_params': {'model_name': 'gpt-5-codex'}
+    },
+    # Anthropic
+    'claude-opus-4-7': {
+        'class': ChatAnthropic,
+        'constructor_params': {'model': 'claude-opus-4-7'}
+    },
+    'claude-sonnet-4-6': {
+        'class': ChatAnthropic,
+        'constructor_params': {'model': 'claude-sonnet-4-6'}
+    },
+    'claude-haiku-4-5': {
+        'class': ChatAnthropic,
+        'constructor_params': {'model': 'claude-haiku-4-5'}
     },
     'claude-sonnet-4-5': {
         'class': ChatAnthropic,

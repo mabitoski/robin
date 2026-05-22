@@ -174,55 +174,12 @@ def _format_scraped_content(content):
     return "\n\n".join(blocks)
 
 
-def _dedupe_preserve_order(items):
-    seen = set()
-    ordered = []
-    for it in items:
-        if it not in seen:
-            seen.add(it)
-            ordered.append(it)
-    return ordered
-
-
-def _extract_indicators(content):
-    """
-    Lightweight IOC extraction so the user sees indicators directly.
-    """
-    if not content:
-        return {}
-
-    text_blob = " ".join(content.values())
-
-    emails = re.findall(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", text_blob)
-    ips = re.findall(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b", text_blob)
-    btc = re.findall(r"\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b", text_blob)
-    eth = re.findall(r"\b0x[a-fA-F0-9]{40}\b", text_blob)
-    domains = re.findall(r"\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b", text_blob)
-
-    # Remove emails from domains to avoid duplicates
-    domain_only = [d for d in domains if d not in {e.split('@')[-1] for e in emails}]
-
-    return {
-        "emails": _dedupe_preserve_order(emails)[:50],
-        "ip_addresses": _dedupe_preserve_order(ips)[:50],
-        "btc_addresses": _dedupe_preserve_order(btc)[:50],
-        "eth_addresses": _dedupe_preserve_order(eth)[:50],
-        "domains": _dedupe_preserve_order(domain_only)[:50],
-    }
-
-
-def _format_indicators(indicators):
-    if not indicators:
-        return "No indicators were automatically extracted."
-
-    lines = []
-    for key, values in indicators.items():
-        label = key.replace("_", " ").title()
-        if values:
-            lines.append(f"{label}: {', '.join(values)}")
-    if not lines:
-        return "No indicators were automatically extracted."
-    return "\n".join(lines)
+from iocs import (
+    extract_indicators as _extract_indicators,
+    format_indicators as _format_indicators,
+    valid_ip as _valid_ip,
+    valid_domain as _valid_domain,
+)
 
 
 def extract_focus_terms(raw_query: str):

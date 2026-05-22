@@ -11,3 +11,10 @@ langchain-anthropic
 langchain_community
 langchain_google_genai
 fpdf2
+stem
+# SOCKS5h support for requests so the Tor proxy actually works
+requests[socks]
+pysocks
+# MCP server (FastMCP) + Claude Code Agent SDK for the agent backends
+mcp
+claude-agent-sdk

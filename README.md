@@ -15,12 +15,25 @@
 
 ## Features
 
-- ⚙️ **Modular Architecture** – Clean separation between search, scrape, and LLM workflows.
-- 🤖 **Multi-Model Support** – Easily switch between OpenAI, Claude, Gemini or local models like Ollama.
-- 💻 **CLI-First Design** – Built for terminal warriors and automation ninjas.
+- ⚙️ **Modular Architecture** – Clean separation between search, scrape, OSINT, enrichment and LLM workflows.
+- 🤖 **Multi-Model Support** – OpenAI (GPT-4.1/5/5-mini), Claude (Sonnet 4-5), Gemini 2.5, OpenRouter, Ollama.
+- 🌑 **Dark web + Clearweb OSINT** – Onion search engines (Ahmia, Tor66, Torch v3, Haystack, ...) **plus** real OSINT APIs:
+   - `ransomware.live` — live ransomware victim feed + group profiles
+   - `crt.sh` — Certificate Transparency, real subdomain enumeration
+   - `haveibeenpwned.com` — public breach catalog
+   - `cavalier.hudsonrock.com` — infostealer infection lookup (free OSINT endpoints)
+   - GitHub code search — find leaked credentials in public repos (token-optional)
+   - DuckDuckGo dorks against Pastebin, Telegram, BreachForums mirrors
+- 🔬 **IOC enrichment** – Each extracted IOC is enriched with real data:
+   - Domains → DNS A records, RDAP WHOIS, crt.sh subdomains
+   - IPs → reverse DNS, geo/ASN (ipapi.co), AbuseIPDB (optional)
+   - Hashes → CIRCL hashlookup + Malware Bazaar verdict
+   - CVEs → NVD short description + CVSS score
+   - Emails → HudsonRock stealer logs
+- 🩺 **Health check** – `robin doctor` (or sidebar button) pings every source so you know what's up before you search.
 - 🐳 **Docker-Ready** – Optional Docker deployment for clean, isolated usage.
-- 📝 **Custom Reporting** – Save investigation output to file for reporting or further analysis.
-- 🧩 **Extensible** – Easy to plug in new search engines, models, or output formats.
+- 📝 **Markdown + PDF Reports** – Save sources, IOCs, enrichment and LLM summary in both formats.
+- 🧩 **Extensible** – Adding a new OSINT source is a single function in [osint_sources.py](osint_sources.py).
 
 ---
 
@@ -82,26 +95,41 @@ python main.py -m gpt-4.1 -q "ransomware payments" -t 12
 
 ## Usage
 
+### CLI
+
 ```bash
-Robin: AI-Powered Dark Web OSINT Tool
+# Default pipeline (dark web + clearweb OSINT + IOC enrichment)
+robin cli -m gpt-5-mini -q "acme corp leak"
 
-options:
-  -h, --help            show this help message and exit
-  --model {gpt4o,gpt-4.1,claude-3-5-sonnet-latest,llama3.1,gemini-2.5-flash}, -m {gpt4o,gpt-4.1,claude-3-5-sonnet-latest,llama3.1,gemini-2.5-flash}
-                        Select LLM model (e.g., gpt4o, claude sonnet 3.5, ollama models, gemini 2.5 flash)
-  --query QUERY, -q QUERY
-                        Dark web search query
-  --threads THREADS, -t THREADS
-                        Number of threads to use for scraping (Default: 5)
-  --output OUTPUT, -o OUTPUT
-                        Filename to save the final intelligence summary. If not provided, a filename based on the
-                        current date and time is used.
+# Restrict to specific clearweb OSINT sources
+robin cli -q "lockbit" --clearweb-sources ransomware.live,hibp,ddg:telegram
 
-Example commands:
- - robin -m gpt4.1 -q "ransomware payments" -t 12
- - robin --model gpt4.1 --query "sensitive credentials exposure" --threads 8 --output filename
- - robin -m llama3.1 -q "zero days"
- - robin -m gemini-2.5-flash -q "zero days"
+# Investigation on a domain (will auto-pivot to crt.sh / HudsonRock / WHOIS)
+robin cli -q "acme.com" --pdf-report --download-files
+
+# Disable enrichment if you just want raw findings
+robin cli -q "stealer logs france" --no-enrich
+
+# Health check every onion engine + OSINT API
+robin doctor
+
+# Web UI
+robin ui --ui-port 8501
+```
+
+#### CLI options
+
+| Flag | Description |
+| --- | --- |
+| `-m / --model` | LLM model (Claude / GPT / Gemini / OpenRouter / Ollama) |
+| `-q / --query` | Search target (company, domain, email, hash, CVE…) |
+| `-t / --threads` | Concurrent workers (default 8) |
+| `-o / --output` | Output base filename (default: timestamped) |
+| `--enrich / --no-enrich` | IOC enrichment (DNS, WHOIS, hash lookup, geo). Default on. |
+| `--no-clearweb-osint` | Skip clearweb OSINT APIs (faster but less data). |
+| `--clearweb-sources` | Comma list. Available: `ransomware.live`, `crt.sh`, `hibp`, `github`, `ddg:pastebin`, `ddg:ghostbin`, `ddg:telegram`, `ddg:breachforum` |
+| `--download-files` | Download text-like files (txt/csv/json/sql/pdf) found in results |
+| `--pdf-report` | Generate a PDF report alongside the markdown summary |
 ```
 
 ---
